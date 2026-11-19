@@ -90,9 +90,6 @@ class SimpleStarVectorProcessor(ProcessorMixin):
         return pad(img, padding, fill=255)  # Assuming white padding
 
 
-AutoProcessor.register(SimpleStarVectorProcessor, SimpleStarVectorProcessor)
-
-
 class StarVectorConfig(PretrainedConfig):
     model_type = "starvector"
 
@@ -129,6 +126,10 @@ class StarVectorConfig(PretrainedConfig):
         self.hidden_size = hidden_size
         self.num_kv_heads = num_kv_heads
         super().__init__(**kwargs)
+
+
+AutoProcessor.register(StarVectorConfig, SimpleStarVectorProcessor)
+
 
 class StarVectorForCausalLM(PreTrainedModel):
     config_class = StarVectorConfig

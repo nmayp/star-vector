@@ -30,7 +30,6 @@ from omegaconf import OmegaConf
 import os
 import time
 from starvector.metrics.util import AverageMeter
-from util import save_checkpoint, get_optimizer
 from starvector.util import get_output_dir
 from starvector.model.builder import model_builder
 from safetensors.torch import load_file as load_safetensors
