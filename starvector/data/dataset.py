@@ -19,7 +19,7 @@ class SVGDataset(SVGDatasetBase):
             self.data = self.data.select(range(self.num_samples))
 
         self.image_processor = kwargs.get('image_processor', None)
-        if 'siglip' in self.image_processor:
+        if self.image_processor and 'siglip' in self.image_processor:
             model_name = {'siglip_512': 'google/siglip-base-patch16-512', 
                           'siglip_384': 'google/siglip-large-patch16-384', 
                           'siglip_256': 'google/siglip-base-patch16-256'}[self.image_processor]

@@ -35,7 +35,7 @@ class SVGTransforms:
             self.shift_imag = np.random.uniform(self.shift_im['from'], self.shift_im['to'])
 
         if self.scale:
-            self.scale = np.random.uniform(self.scale['from'], self.scale['to'])
+            self._scale_value = np.random.uniform(self.scale['from'], self.scale['to'])
 
         if self.color_noise:
             self.color_noise_std = np.random.uniform(self.color_noise['from'], self.color_noise['to'])
@@ -102,7 +102,7 @@ class SVGTransforms:
 
     def do_scale(self, path):
         if self.scale:
-            return path.scaled(self.scale)
+            return path.scaled(self._scale_value)
         else:
             return path
     

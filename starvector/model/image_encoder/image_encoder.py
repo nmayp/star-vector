@@ -25,7 +25,7 @@ class ImageEncoder(nn.Module):
             self.processor = ImageTrainProcessor(size=config.image_size)
 
         elif self.image_encoder_type == 'convnext':
-            self.visual_encoder = self.build_vqgan_encoder()
+            self.visual_encoder = self.build_convnext_encoder()
             self.ln_vision = None
             self.processor = ImageTrainProcessor(size=config.image_size)
 
