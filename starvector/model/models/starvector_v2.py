@@ -9,7 +9,14 @@ class StarVectorStarCoder2(StarVectorBase):
     def __init__(self, config, **kwargs):
         super().__init__(config, **kwargs)
 
-        self.processor = AutoImageProcessor.from_pretrained(config._name_or_path, trust_remote_code=True)
+        name_or_path = getattr(config, "_name_or_path", "")
+        if name_or_path:
+            try:
+                self.processor = AutoImageProcessor.from_pretrained(name_or_path, trust_remote_code=True)
+            except Exception:
+                self.processor = None
+        else:
+            self.processor = None
 
     def _get_svg_transformer(self, config, **kwargs):
         from starvector.model.llm.starcoder2 import StarCoderModel # This is a different model than V1, uses StarCoder2

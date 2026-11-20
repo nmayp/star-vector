@@ -163,16 +163,19 @@ class StarVectorForCausalLM(PreTrainedModel):
         completion_embeds = self.model._get_embeddings(input_ids)
         inputs_embeds = torch.cat([vision_embeds.repeat(num_generations, 1, 1), completion_embeds], dim=1)
 
-        transformer_outputs = self.model.svg_transformer.transformer.transformer(
+        lm_model = self.model.svg_transformer.transformer
+        base_model = getattr(lm_model, "transformer", getattr(lm_model, "model", lm_model))
+        transformer_outputs = base_model(
             inputs_embeds=inputs_embeds, 
             attention_mask=attention_mask,
         )
         hidden_states = transformer_outputs[0]
 
+        lm_head = getattr(lm_model, "lm_head", None)
         if num_logits_to_keep > 0:
-            lm_logits = self.model.svg_transformer.transformer.lm_head(hidden_states[:, -num_logits_to_keep:, :])
+            lm_logits = lm_head(hidden_states[:, -num_logits_to_keep:, :]) if lm_head else hidden_states[:, -num_logits_to_keep:, :]
         else:
-            lm_logits = self.model.svg_transformer.transformer.lm_head(hidden_states)
+            lm_logits = lm_head(hidden_states) if lm_head else hidden_states
 
         loss = None
         return CausalLMOutputWithCrossAttentions(

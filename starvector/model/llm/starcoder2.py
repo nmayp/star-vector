@@ -3,6 +3,7 @@ from transformers import (
     AutoConfig, 
     AutoModelForCausalLM, 
     AutoTokenizer,
+    utils,
     )
 from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
 from functools import partial
@@ -19,11 +20,16 @@ class StarCoderModel(nn.Module):
         model_config = AutoConfig.from_pretrained(config.starcoder_model_name, trust_remote_code=True)
         model_config.use_cache = config.use_cache
         model_config.use_bfloat16 = True
+        attn_impl = "flash_attention_2" if (getattr(config, "use_flash_attn", False) and utils.is_flash_attn_2_available()) else "sdpa"
+        torch_dtype = getattr(config, "torch_dtype", torch.bfloat16)
+        if isinstance(torch_dtype, str):
+            from starvector.util import dtype_mapping
+            torch_dtype = dtype_mapping.get(torch_dtype, torch.bfloat16)
         model = AutoModelForCausalLM.from_pretrained(
             config.starcoder_model_name, 
             config=model_config, 
-            attn_implementation="flash_attention_2", 
-            torch_dtype=torch.bfloat16, 
+            attn_implementation=attn_impl, 
+            torch_dtype=torch_dtype, 
             trust_remote_code=True)
         model.resize_token_embeddings(len(self.tokenizer))
         self.transformer = model
