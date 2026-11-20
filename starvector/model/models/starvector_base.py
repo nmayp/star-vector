@@ -8,15 +8,18 @@ from transformers.generation.stopping_criteria import StoppingCriteria, Stopping
 
 class StoppingCriteriaSub(StoppingCriteria):
 
-    def __init__(self, stops=[]):
-        super().__init__()  # Correct super() call
-        self.stops = stops
+    def __init__(self, stops=None):
+        super().__init__()
+        self.stops = stops if stops is not None else []
 
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor):
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor = None, **kwargs):
         # Check if any of the stop sequences are in the input_ids
         for stop_ids in self.stops:
-            if input_ids[0][-len(stop_ids):].tolist() == stop_ids:
-                return True
+            stop_len = len(stop_ids)
+            if input_ids.shape[1] >= stop_len:
+                for seq in input_ids:
+                    if seq[-stop_len:].tolist() == stop_ids:
+                        return True
         return False
 
 class StarVectorBase(nn.Module, ABC):
@@ -173,7 +176,7 @@ class StarVectorBase(nn.Module, ABC):
 
     def forward(self, batch):
         """Forward pass"""
-        device = batch["image"].device
+        device = batch["image"].device if ("image" in batch and isinstance(batch["image"], torch.Tensor)) else next(self.parameters()).device
         task = self.task
 
         # Depending 
@@ -296,7 +299,7 @@ class StarVectorBase(nn.Module, ABC):
 
     def generate_text2svg(self, batch, **kwargs):
         """Base implementation of text to SVG generation"""
-        device = batch["image"].device
+        device = batch["image"].device if ("image" in batch and isinstance(batch["image"], torch.Tensor)) else next(self.parameters()).device
         prompt = batch["caption"]
         
         prompt_tokens = self._tokenize(
@@ -319,15 +322,16 @@ class StarVectorBase(nn.Module, ABC):
         max_length = kwargs.get('max_length', 30) - input_tokens.size(1)
 
         generation_kwargs = self._get_generation_kwargs(
-            {**kwargs, 'inputs_embeds': inputs_embeds, 'attention_mask': attention_mask},
-            input_tokens.size(1)
+            {**kwargs, 'inputs_embeds': inputs_embeds, 'attention_mask': attention_mask}
         )
         # Let subclasses override these defaults if needed
         generation_kwargs.update(self._get_text2svg_specific_kwargs(kwargs))
         generation_kwargs['max_length'] = max_length
         
         outputs = self.svg_transformer.transformer.generate(**generation_kwargs)
-        return outputs
+        outputs = torch.cat([input_tokens, outputs], dim=1)
+        raw_svg = self.svg_transformer.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        return raw_svg
 
     def _get_text2svg_specific_kwargs(self, kwargs):
         """Default implementation of text2svg specific generation kwargs.
